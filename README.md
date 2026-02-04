@@ -1,73 +1,114 @@
-docker compose run --rm jna-builder
-docker compose run --rm jni-builder
-# CompileCppLibraries - Docker Cross-Compile para JNI y JNA
+# Cross-Compile C/C++ Libraries for Java (JNI/JNA) with Docker
 
-## Descripción
-
-Este proyecto permite compilar librerías C++ para Java (JNI y JNA) tanto para Linux (.so) como para Windows (.dll) usando Docker y cross-compiling.
-Ideal para proyectos multiplataforma y para automatizar builds sin depender de entornos de desarrollo específicos.
+This project cross-compiles C/C++ libraries for Java using **JNI** and **JNA**, producing Linux `.so` and Windows `.dll` binaries from a Docker-based toolchain.
 
 ---
 
-## Estructura de carpetas
+##ProjectLayout
 
-- cpp/            → Código fuente C++
-- includes/       → Headers propios y JNI generados por javac
-- includes/win32/ → Headers JNI de Windows (jni.h y jni_md.h)
-- Win/JNA/        → Salida DLL para JNA
-- Win/JNI/        → Salida DLL para JNI
-- Linux/JNA/      → Salida SO para JNA
-- Linux/JNI/      → Salida SO para JNI
-
----
-
-## Uso rápido
-
-### 1. Compilar para JNA (Windows y Linux)
-
-	docker compose run --rm jna-builder
-
-Genera:
-- Win/JNA/myLib.dll
-- Linux/JNA/libmyLib.so
-
-### 2. Compilar para JNI (Windows y Linux)
-
-Asegúrate de tener en `includes/win32/` los headers JNI de Windows (`jni.h` y `jni_md.h`).
-
-	docker compose run --rm jni-builder
-
-Genera:
-- Win/JNI/mylib.dll
-- Linux/JNI/libmylib.so
+- **[src/](src/)** 
+- **[src/c/](src/c/)** → C sources 
+- **[src/cpp/](src/cpp/)** → C++ sources 
+- **[src/java/](src/java/)** → Java sources (JNI/JNA demos)
+- **[includes/](includes/)** → Project headers and generated JNI headers 
+- **[includes/win32/](includes/win32/)** → Windows JNI headers (`jni.h`, `jni_md.h`)
+- **[Linux/JNI/](Linux/JNI/)** → Linux JNI build output
+- **[Linux/JNA/](Linux/JNA/)** → Linux JNA build output
+- **[Win/JNI/](Win/JNI/)** → Windows JNI build output
+- **[Win/JNA/](Win/JNA/)** → Windows JNA build output
 
 ---
 
-## Requisitos
+##QuickStart
 
-- Docker y Docker Compose
-- Tener los headers JNI de Windows en `includes/win32/` (puedes copiarlos desde un JDK de Windows)
+### 0) Build the Docker image (first time only)
+
+The first build can take a while because the toolchain is downloaded and configured. This is expected.
+
+```sh
+docker compose build
+```
+
+### 1) Build JNA (Linux + Windows)
+
+Choose one of the available JNA builders:
+
+- **C library (JNA)** 
+```sh 
+docker compose run --rm jna-c 
+```
+- **C++ library (JNA)** 
+```sh 
+docker compose run --rm jna-cpp 
+```
+
+Outputs:
+- `Linux/JNA/*.so`
+- `Win/JNA/*.dll`
+
+### 2) Build JNI (Linux + Windows)
+
+Choose one of the available JNI builders:
+
+- **C library (JNI)** 
+```sh 
+docker compose run --rm jni-c 
+```
+- **C++ library (JNI)** 
+```sh 
+docker compose run --rm jni-cpp 
+```
+
+Outputs:
+- `Linux/JNI/*.so`
+- `Win/JNI/*.dll`
 
 ---
 
-## Notas
+##Windows JNI Headers
 
-- Si cambias el nombre de la librería, ajusta los comandos en `docker-compose.yml`.
-- Para debug de memoria en Linux, puedes usar ASan o Valgrind, pero en Windows no están disponibles.
-- Puedes usar WSL2 para debuggear en Linux y compilar en ambos sistemas.
+To cross-compile JNI for Windows, you must provide the Windows JNI headers:
 
-### Sobre los headers JNI de Windows
+- **[includes/win32/jni.h](includes/win32/jni.h)**
+- **[includes/win32/jni_md.h](includes/win32/jni_md.h)**
 
-Los archivos `jni.h` y `jni_md.h` en `includes/win32/` provienen de un JDK de Windows (por ejemplo, OpenJDK o Adoptium) y se incluyen únicamente para permitir la compilación cruzada de librerías JNI para Windows desde entornos Linux. No contienen código propietario ni binarios, solo definiciones estándar de la interfaz JNI.
-
----
-
-## Consejos
-
-- Mantén sincronizados los headers JNI según la plataforma de destino.
-- Si tienes problemas con JNI, revisa siempre los paths de los includes y la versión de los headers.
+These come from a Windows JDK (e.g., Adoptium/OpenJDK). They are required only for compilation, not runtime.
 
 ---
 
-¡Feliz cross-compiling!
+##BuildScript
 
+There is a helper script in **[build.sh](build.sh)** if you want to run builds locally or wrap Docker commands.
+
+---
+
+##Notes
+
+- The output directories (**[Linux/JNI/](Linux/JNI/)**, **[Linux/JNA/](Linux/JNA/)**, **[Win/JNI/](Win/JNI/)**, **[Win/JNA/](Win/JNA/)**) are intentionally kept in the repo for consistent structure.
+- **Linux builds are compiled against musl (Alpine).** If you plan to use the `.so` files on Ubuntu/Debian (glibc), you will need to rebuild them with a glibc-based toolchain.
+
+### Library Name Customization
+
+The Docker Compose services set `LIB_NAME` so you can control the output library name. Edit [docker-compose.yml](docker-compose.yml) and change the values ​​if needed.
+
+Example:
+
+```
+environment: 
+- LIB_NAME=myLibJNA_C
+```
+
+This affects the filename produced in the output directories.
+
+---
+
+## Source Files
+
+- **JNI** 
+- C: **[src/c/HelloJNI.c](src/c/HelloJNI.c)** 
+- C++: **[src/cpp/HelloJNI.cpp](src/cpp/HelloJNI.cpp)** 
+- Java: **[src/java/HelloJNI.java](src/java/HelloJNI.java)**
+
+- **JNA** 
+- C++: **[src/cpp/HelloJNA.cpp](src/cpp/HelloJNA.cpp)** 
+- Java: **[src/java/HelloJNA.java](src/java/HelloJNA.java)**

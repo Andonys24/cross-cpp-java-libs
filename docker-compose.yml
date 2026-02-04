@@ -1,41 +1,31 @@
 services:
-  jna-builder:
+  # Definition of the base image
+  base-builder: &base_config
     build: .
-    image: crosscpp-java:lastest
-    container_name: jna-builder
+    image: cross-builder:latest  # <--- All services will use the same image
     volumes:
-      - ./cpp:/workspace/cpp
-      - ./Win/JNA:/workspace/Win/JNA
-      - ./Linux/JNA:/workspace/Linux/JNA
-    working_dir: /workspace
-    command:
-      - sh
-      - -c
-      - |
-        # Compilar para Linux
-        g++ -fPIC -shared cpp/*.cpp -o Linux/JNA/libmyLib.so
-        # Compilar para Windows
-        x86_64-w64-mingw32-g++ -shared cpp/*.cpp -o Win/JNA/myLib.dll
-    tty: true
+      - .:/workspace
 
-  jni-builder:
-    build: .
-    image: crosscpp-java:lastest
-    container_name: jni-builder
-    volumes:
-      - ./cpp:/workspace/cpp
-      - ./includes/win32/jni.h:/usr/lib/jvm/java-21-openjdk/include/jni.h
-      - ./includes/win32/jni_md.h:/usr/lib/jvm/java-21-openjdk/include/win32/jni_md.h
-      - ./includes:/workspace/includes
-      - ./Win/JNI:/workspace/Win/JNI
-      - ./Linux/JNI:/workspace/Linux/JNI
-    working_dir: /workspace
-    command:
-      - sh
-      - -c
-      - |
-        # Compilar para Linux
-        g++ -fPIC -Iincludes -I/usr/lib/jvm/java-21-openjdk/include -I/usr/lib/jvm/java-21-openjdk/include/linux -shared cpp/*.cpp -o Linux/JNI/libmylib.so
-        # Compilar para Windows
-        x86_64-w64-mingw32-g++ -Iincludes -I/usr/lib/jvm/java-21-openjdk/include -I/usr/lib/jvm/java-21-openjdk/include/win32 -shared cpp/*.cpp -o Win/JNI/mylib.dll
-    tty: true
+  jna-c:
+    <<: *base_config
+    command: ["jna", "c"]
+    environment:
+      - LIB_NAME=myLibJNA_C
+
+  jna-cpp:
+    <<: *base_config
+    command: ["jna", "cpp"]
+    environment:
+      - LIB_NAME=myLibJNA_CPP
+
+  jni-c:
+    <<: *base_config
+    command: ["jni", "c"]
+    environment:
+      - LIB_NAME=myLibJNI_C
+
+  jni-cpp:
+    <<: *base_config
+    command: ["jni", "cpp"]
+    environment:
+      - LIB_NAME=myLibJNI_CPP
